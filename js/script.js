@@ -209,6 +209,66 @@ document.addEventListener('DOMContentLoaded', () => {
   style.textContent = `.nav-link.active { color: var(--white) !important; }`;
   document.head.appendChild(style);
 
+  /* ── Portfolio Slideshow ── */
+  document.querySelectorAll('.pf-slideshow').forEach(item => {
+    const slides = JSON.parse(item.dataset.slides || '[]');
+    if (slides.length < 2) return;
+
+    const imgEl   = item.querySelector('.slide-img');
+    const dotsWrap = item.querySelector('.slide-dots');
+    let current = 0;
+    let timer;
+
+    // Pré-carrega todas as imagens
+    const images = slides.map((src, i) => {
+      const img = i === 0 ? imgEl : document.createElement('img');
+      img.src = src;
+      img.alt = imgEl.alt;
+      img.className = 'slide-img' + (i === 0 ? ' active' : '');
+      img.loading = 'lazy';
+      if (i > 0) imgEl.parentElement.insertBefore(img, dotsWrap);
+      return img;
+    });
+
+    // Cria dots
+    const counter = document.createElement('span');
+    counter.className = 'slide-counter';
+    counter.textContent = `1 / ${slides.length}`;
+    imgEl.parentElement.appendChild(counter);
+
+    slides.forEach((_, i) => {
+      const dot = document.createElement('span');
+      dot.className = 'slide-dot' + (i === 0 ? ' active' : '');
+      dot.addEventListener('click', (e) => { e.stopPropagation(); goTo(i); });
+      dotsWrap.appendChild(dot);
+    });
+
+    const dots = dotsWrap.querySelectorAll('.slide-dot');
+
+    const goTo = (idx) => {
+      images[current].classList.remove('active');
+      dots[current].classList.remove('active');
+      current = (idx + slides.length) % slides.length;
+      images[current].classList.add('active');
+      dots[current].classList.add('active');
+      counter.textContent = `${current + 1} / ${slides.length}`;
+    };
+
+    const next = () => goTo(current + 1);
+
+    const startTimer = () => { timer = setInterval(next, 2800); };
+    const stopTimer  = () => clearInterval(timer);
+
+    startTimer();
+    item.addEventListener('mouseenter', stopTimer);
+    item.addEventListener('mouseleave', startTimer);
+
+    // Clique abre lightbox com as fotos deste cliente
+    item.querySelector('.portfolio-image').addEventListener('click', () => {
+      openGroupLightbox(slides, current, item.dataset.title || '');
+    });
+  });
+
   /* ── Lightbox ── */
   const lightbox      = document.getElementById('lightbox');
   const lightboxImg   = document.getElementById('lightboxImg');
@@ -241,35 +301,41 @@ document.addEventListener('DOMContentLoaded', () => {
     updateNavButtons();
   };
 
+  // Lightbox para grupos de slideshow
+  const openGroupLightbox = (srcs, startIdx, title) => {
+    portfolioImages = srcs.map(src => ({ src, alt: title }));
+    currentIndex = startIdx;
+    lightboxImg.src = srcs[startIdx];
+    lightboxImg.alt = title;
+    lightboxCap.textContent = `${title} — ${startIdx + 1} / ${srcs.length}`;
+    lightbox.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    updateNavButtons();
+  };
+
   const closeLightbox = () => {
     lightbox.classList.remove('active');
     document.body.style.overflow = '';
     setTimeout(() => { lightboxImg.src = ''; }, 300);
   };
 
-  const showPrev = () => {
-    currentIndex = (currentIndex - 1 + portfolioImages.length) % portfolioImages.length;
+  const navigateLightbox = (dir) => {
+    currentIndex = (currentIndex + dir + portfolioImages.length) % portfolioImages.length;
     lightboxImg.style.opacity = '0';
     setTimeout(() => {
       lightboxImg.src = portfolioImages[currentIndex].src;
       lightboxImg.alt = portfolioImages[currentIndex].alt;
-      lightboxCap.textContent = portfolioImages[currentIndex].alt;
+      const cap = portfolioImages[currentIndex].alt;
+      lightboxCap.textContent = portfolioImages.length > 1
+        ? `${cap} — ${currentIndex + 1} / ${portfolioImages.length}`
+        : cap;
       lightboxImg.style.opacity = '1';
     }, 150);
     updateNavButtons();
   };
 
-  const showNext = () => {
-    currentIndex = (currentIndex + 1) % portfolioImages.length;
-    lightboxImg.style.opacity = '0';
-    setTimeout(() => {
-      lightboxImg.src = portfolioImages[currentIndex].src;
-      lightboxImg.alt = portfolioImages[currentIndex].alt;
-      lightboxCap.textContent = portfolioImages[currentIndex].alt;
-      lightboxImg.style.opacity = '1';
-    }, 150);
-    updateNavButtons();
-  };
+  const showPrev = () => navigateLightbox(-1);
+  const showNext = () => navigateLightbox(1);
 
   const updateNavButtons = () => {
     lightboxImg.style.transition = 'opacity 0.15s ease';
