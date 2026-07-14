@@ -256,25 +256,38 @@ button {
 /* ===== AOS ANIMATIONS ===== */
 [data-aos] {
   opacity: 0;
-  transform: translateY(30px);
-  transition: opacity 0.7s ease, transform 0.7s ease;
+  transform: translateY(24px);
+  transition: opacity 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
+  transition-delay: 0s;
 }
 
 [data-aos="fade-left"] {
-  transform: translateX(40px);
+  transform: translateX(32px);
 }
 
 [data-aos="fade-right"] {
-  transform: translateX(-40px);
+  transform: translateX(-32px);
 }
 
 [data-aos="fade-down"] {
-  transform: translateY(-20px);
+  transform: translateY(-16px);
 }
 
 [data-aos].aos-animate {
   opacity: 1;
   transform: translate(0);
+}
+
+/* Delays via CSS — suave em qualquer tamanho de tela */
+[data-aos][data-aos-delay="100"] { transition-delay: 0.1s; }
+[data-aos][data-aos-delay="200"] { transition-delay: 0.2s; }
+[data-aos][data-aos-delay="300"] { transition-delay: 0.3s; }
+[data-aos][data-aos-delay="400"] { transition-delay: 0.4s; }
+
+/* Delay só se aplica ao animar — sem delay no estado inicial */
+[data-aos]:not(.aos-animate)[data-aos-delay] {
+  transition-delay: 0s;
 }
 
 /* ===== NAVBAR ===== */

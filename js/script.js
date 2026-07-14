@@ -33,19 +33,30 @@ document.addEventListener('DOMContentLoaded', () => {
   /* ── AOS (Scroll Animations) ── */
   const aosElements = document.querySelectorAll('[data-aos]');
 
+  // Detecta tela grande para aumentar margem (evitar animações imediatas no load)
+  const isMobile = window.innerWidth < 768;
+  const rootMarginBottom = isMobile ? '-40px' : '-80px';
+
   const aosObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
-        const delay = parseInt(entry.target.dataset.aosDelay || 0);
-        setTimeout(() => {
-          entry.target.classList.add('aos-animate');
-        }, delay);
+        // Delay via CSS (data-aos-delay já definido no CSS com transition-delay)
+        // Apenas adiciona a classe — sem setTimeout para evitar saltos
+        entry.target.classList.add('aos-animate');
         aosObserver.unobserve(entry.target);
       }
     });
-  }, { threshold: 0.12, rootMargin: '0px 0px -60px 0px' });
+  }, {
+    threshold: 0.08,
+    rootMargin: `0px 0px ${rootMarginBottom} 0px`
+  });
 
-  aosElements.forEach(el => aosObserver.observe(el));
+  // Pequeno delay inicial para não disparar tudo no load da página
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      aosElements.forEach(el => aosObserver.observe(el));
+    }, 120);
+  });
 
   /* ── Counter Animation ── */
   const counters = document.querySelectorAll('.stat-number[data-count]');
@@ -416,10 +427,5 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  /* ── Stagger service cards ── */
-  const serviceCards = document.querySelectorAll('.service-card');
-  serviceCards.forEach((card, i) => {
-    card.style.transitionDelay = `${i * 0.05}s`;
-  });
 
 });
