@@ -1,0 +1,12 @@
+# Vídeos grandes (hospedar via CDN ou Vercel separadamente)
+assets/images/*.MOV
+assets/images/*.mov
+
+# Sistema
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+*.code-workspace
