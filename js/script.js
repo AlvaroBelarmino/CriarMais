@@ -33,30 +33,28 @@ document.addEventListener('DOMContentLoaded', () => {
   /* ── AOS (Scroll Animations) ── */
   const aosElements = document.querySelectorAll('[data-aos]');
 
-  // Detecta tela grande para aumentar margem (evitar animações imediatas no load)
-  const isMobile = window.innerWidth < 768;
-  const rootMarginBottom = isMobile ? '-40px' : '-80px';
-
   const aosObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
-        // Delay via CSS (data-aos-delay já definido no CSS com transition-delay)
-        // Apenas adiciona a classe — sem setTimeout para evitar saltos
         entry.target.classList.add('aos-animate');
         aosObserver.unobserve(entry.target);
       }
     });
   }, {
-    threshold: 0.08,
-    rootMargin: `0px 0px ${rootMarginBottom} 0px`
+    threshold: 0.07,
+    // Margem negativa maior em desktop — evita animar antes do usuário chegar
+    rootMargin: '0px 0px -10% 0px'
   });
 
-  // Pequeno delay inicial para não disparar tudo no load da página
-  requestAnimationFrame(() => {
-    setTimeout(() => {
+  // Inicia observer após primeiro render para não capturar elementos
+  // que já estão na tela no load (causaria animação imediata em bloco)
+  if (document.readyState === 'complete') {
+    aosElements.forEach(el => aosObserver.observe(el));
+  } else {
+    window.addEventListener('load', () => {
       aosElements.forEach(el => aosObserver.observe(el));
-    }, 120);
-  });
+    });
+  }
 
   /* ── Counter Animation ── */
   const counters = document.querySelectorAll('.stat-number[data-count]');
@@ -174,25 +172,26 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  /* ── Parallax hero elements on mouse move ── */
+  /* ── Parallax hero elements on mouse move (apenas desktop) ── */
   const heroSection = document.querySelector('.hero');
-  if (heroSection) {
-    const heroGlows = heroSection.querySelectorAll('.hero-glow');
+  if (heroSection && window.innerWidth > 768) {
+    let rafPending = false;
+    let mouseX = 0, mouseY = 0;
+
     heroSection.addEventListener('mousemove', (e) => {
-      const { clientX, clientY } = e;
-      const { innerWidth, innerHeight } = window;
-      const xRatio = (clientX / innerWidth - 0.5) * 2;
-      const yRatio = (clientY / innerHeight - 0.5) * 2;
-
-      heroGlows.forEach((glow, i) => {
-        const factor = (i + 1) * 15;
-        glow.style.transform = `translate(${xRatio * factor}px, ${yRatio * factor}px)`;
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+      if (rafPending) return;
+      rafPending = true;
+      requestAnimationFrame(() => {
+        const xRatio = (mouseX / window.innerWidth - 0.5) * 2;
+        const yRatio = (mouseY / window.innerHeight - 0.5) * 2;
+        const medal = heroSection.querySelector('.hero-medal');
+        if (medal) {
+          medal.style.transform = `translateY(var(--float-offset, 0px)) translate(${xRatio * -8}px, ${yRatio * -5}px)`;
+        }
+        rafPending = false;
       });
-
-      const heroImg = heroSection.querySelector('.hero-image');
-      if (heroImg) {
-        heroImg.style.transform = `translate(${xRatio * -6}px, ${yRatio * -4}px)`;
-      }
     });
   }
 
@@ -353,15 +352,17 @@ document.addEventListener('DOMContentLoaded', () => {
     lightboxImg.style.opacity = '1';
   };
 
-  // Clique nas imagens do portfólio (toda a área, não só a tag img)
-  document.querySelectorAll('.portfolio-item .portfolio-image').forEach((wrap, i) => {
-    // Ignora o item de vídeo
+  // Clique nas imagens do portfólio — ignora vídeo E slideshows (têm handler próprio)
+  document.querySelectorAll('.portfolio-item .portfolio-image').forEach((wrap) => {
+    const item = wrap.closest('.portfolio-item');
     if (wrap.classList.contains('portfolio-video-wrap')) return;
+    if (item && item.classList.contains('pf-slideshow')) return; // já tem handler
     wrap.style.cursor = 'zoom-in';
     wrap.addEventListener('click', () => {
       buildImageList();
-      // Recalcula índice baseado nas imagens visíveis
-      const imgs = document.querySelectorAll('.portfolio-item:not(.portfolio-video-wrap) .portfolio-image img');
+      const imgs = document.querySelectorAll(
+        '.portfolio-item:not(.pf-slideshow):not([data-category="video"]) .portfolio-image img'
+      );
       const thisImg = wrap.querySelector('img');
       let idx = 0;
       imgs.forEach((img, j) => { if (img === thisImg) idx = j; });
